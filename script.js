@@ -1,4 +1,4 @@
-var urlprefix = ".ip.flares.cloud"
+var urlprefix = ".test.33322111.xyz"
 var imgUrls = ["/img/s.webp", "/img/m.webp", "/img/l.webp"]
 var imgBytes = [117902, 1263924, 10914532]
 var imgi = 1
