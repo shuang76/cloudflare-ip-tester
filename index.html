@@ -10,128 +10,181 @@
   <link href="/style.css" rel="stylesheet">
   <script type="text/javascript" src="https://unpkg.com/jquery@3.5.1/dist/jquery.js"></script>
   <script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.7.2/dist/js/tabulator.min.js"></script>
-
+  <style>
+    .table.panel .col { margin-bottom: 10px; }
+    #generate-number { width: 65px; }
+    #stop-test {
+      background-color: #e74c3c !important;
+      color: white !important;
+      border-color: #c0392b !important;
+    }
+    #stop-test:hover { background-color: #c0392b !important; }
+    .line .button { margin-left: 2px; }
+  </style>
 </head>
 
 <body>
 
   <h1>Cloudflare IP Batch Test Tool</h1>
 
-<div class="table panel">
-  <div class="line">
-    <div class="col">
-      <button class="button big" id="generate-ip">生成IP数量</button>
-      <div class="line">
-        <input id="generate-number" class="border" type="number" value="200" min="1" max="5000"></input>
-        <span style="font-size: 12px; align-self: center; margin-left: 5px;">个</span>
+  <div class="table panel">
+    <div class="line">
+      <div class="col">
+        <button class="button big" id="generate-ip">生成IP数量</button>
+        <div class="line">
+          <input id="generate-number" class="border" type="number" value="200" min="1" max="5000"></input>
+          <span style="font-size: 14px; align-self: center; margin-left: 5px;">个</span>
+        </div>
       </div>
-    </div>
 
-    <div class="col">
-      <button class="button big" id="select-all" status=0>选择所有IP</button>
-      <div class="line">
-        <input id="select-number" class="border" type="number" value="20" min="1" max="100"></input>
-        <button class="button" id="select-random"> 随机选 </button>
+      <div class="col">
+        <button class="button big" id="select-all" status=0>选择所有IP</button>
+        <div class="line">
+          <input id="select-number" class="border" type="number" value="20" min="1" max="100"></input>
+          <button class="button" id="select-random"> 随机选 </button>
+        </div>
       </div>
-    </div>
 
-    <div class="col">
-      <button class="button big" id="test-respond" status=0>响应值测试</button>
-      <div class="line">
-        <select id="img-select" class="border">
-          <option value="0">115KB</option>
-          <option value="1" selected="selected">1.20MB</option>
-          <option value="2">10.4MB</option>
-        </select>
-        <button class="button" id="test-speed" status=0> 网速测试 </button>
+      <div class="col">
+        <button class="button big" id="test-respond" status=0>响应值测试</button>
+        <div class="line">
+          <select id="img-select" class="border">
+            <option value="0">115KB</option>
+            <option value="1" selected="selected">1.20MB</option>
+            <option value="2">10.4MB</option>
+          </select>
+          <button class="button" id="test-speed"> 网速测试 </button>
+          <button class="button" id="stop-test"> 停止测试 </button>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
-
 
   <div id="main-table"></div>
   <div class="panel bottom">
-    <div class="button" id="download" status=0>Data Sheet</div>
+    <div class="button" id="download" status=0>Data Sheet (CSV)</div>
   </div>
-  <p>First Respond of every IP may be relatively slow</p>
-  <p>You can use Shift + Drag to choose a range quickly (in some browser)</p>
-  <p>If testing too frequently, you may be blocked by the firewall of your ISP or Cloudflare</p>
-  <p>It is not clear about the test consistency between browser and local software</p>
-  <p>Visit with either http or https may cause difference in results</p>
-  <p>Want More IP? Visit <a href="/whole"> here </a> (only support http)</p>
-  <p>Feedback via <a href="https://github.com/TulvL/cloudflare-ip-tester">Github</a> is welcome</p>
-  <p>IE browser is not supported</p>
+
   <br />
   <p><a href="http://test.33322111.xyz/">HOME</a></p>
 
-  <br />
-  <br />
   <script type="text/javascript" src="/script.js"></script>
-<script>
-  function ipToInt(ip) {
-      return ip.split('.').reduce((res, item) => (res << 8) + parseInt(item), 0) >>> 0;
-  }
 
-  function intToIp(int) {
-      return [(int >>> 24) & 0xff, (int >>> 16) & 0xff, (int >>> 8) & 0xff, int & 0xff].join('.');
-  }
+  <script>
+    var stopTest = false; 
+    var respondTimeouts = []; 
+    var currentXHR = null; 
 
-  function generateCloudflareIPs(count) {
-      const cidrs = [
-          "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "104.16.0.0/13",
-          "104.24.0.0/14", "108.162.192.0/18", "131.0.72.0/22", "141.101.64.0/18",
-          "162.158.0.0/15", "172.64.0.0/13", "173.245.48.0/20", "188.114.96.0/20",
-          "190.93.240.0/20", "197.234.240.0/22", "198.41.128.0/17"
-      ];
+    function ipToInt(ip) { return ip.split('.').reduce((res, item) => (res << 8) + parseInt(item), 0) >>> 0; }
+    function intToIp(int) { return [(int >>> 24) & 0xff, (int >>> 16) & 0xff, (int >>> 8) & 0xff, int & 0xff].join('.'); }
 
-      let allCSubnets = [];
-      cidrs.forEach(cidr => {
-          let [ip, mask] = cidr.split('/');
-          let startInt = ipToInt(ip);
-          let numIPs = Math.pow(2, 32 - parseInt(mask));
-          for (let i = 0; i < numIPs; i += 256) {
-              allCSubnets.push(startInt + i);
-          }
-      });
+    function generateCloudflareIPs(count) {
+        const cidrs = ["103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "104.16.0.0/13", "104.24.0.0/14", "108.162.192.0/18", "131.0.72.0/22", "141.101.64.0/18", "162.158.0.0/15", "172.64.0.0/13", "173.245.48.0/20", "188.114.96.0/20", "190.93.240.0/20", "197.234.240.0/22", "198.41.128.0/17"];
+        let allCSubnets = [];
+        cidrs.forEach(cidr => {
+            let [ip, mask] = cidr.split('/');
+            let startInt = ipToInt(ip);
+            let numIPs = Math.pow(2, 32 - parseInt(mask));
+            for (let i = 0; i < numIPs; i += 256) { allCSubnets.push(startInt + i); }
+        });
+        allCSubnets.sort(() => Math.random() - 0.5);
+        let selectedIPs = [];
+        let actualCount = Math.min(count, allCSubnets.length);
+        for (let i = 0; i < actualCount; i++) {
+            let baseIpInt = allCSubnets[i];
+            selectedIPs.push(intToIp(baseIpInt + Math.floor(Math.random() * 254) + 1));
+        }
+        return selectedIPs.join('\n');
+    }
 
-      allCSubnets.sort(() => Math.random() - 0.5);
+    function refreshTable() {
+        let num = parseInt($("#generate-number").val()) || 200;
+        idn = 0; 
+        if (window.database) { for (var key in database) delete database[key]; }
+        tablemake(generateCloudflareIPs(num));
+        $("#select-number").attr("max", idn);
+    }
 
-      let selectedIPs = [];
-      let actualCount = Math.min(count, allCSubnets.length);
-      
-      for (let i = 0; i < actualCount; i++) {
-          let baseIpInt = allCSubnets[i];
-          let hostIpInt = baseIpInt + Math.floor(Math.random() * 254) + 1;
-          selectedIPs.push(intToIp(hostIpInt));
-      }
-      return selectedIPs.join('\n');
-  }
+    window.speedRecur = function(list, i) {
+        if (stopTest || i >= list.length) {
+            currentXHR = null;
+            table.redraw(true);
+            $("#test-speed").prop("disabled", false);
+            $("#img-select").prop("disabled", false);
+            return;
+        }
 
-  function refreshTable() {
-      let num = parseInt($("#generate-number").val());
-      if (isNaN(num) || num <= 0) num = 200;
-      if (num > 5000) num = 5000;
-      
-      idn = 0;
-      for (var key in database) delete database[key];
+        if (i == 3) table.redraw(true);
 
-      const data = generateCloudflareIPs(num);
-      tablemake(data);
-      
-      $("#select-number").attr("max", idn);
-      console.log("Generated " + idn + " unique C-class IPs.");
-  }
+        var one = list[i];
+        var id = one.id;
+        var addr = one.addr;
+        var started = window.performance.now();
+        
+        var http = new XMLHttpRequest();
+        currentXHR = http; 
 
-  $(document).ready(function() {
-      refreshTable();
-      $("#generate-ip").click(function() {
-          refreshTable();
-          select_0(); 
-      });
-  });
-</script>
+        http.open("GET", addr, true);
+        http.loadr = 0;
+        http.onloadend = function (e) {
+            if (stopTest) return; 
+            var rbytes = (e.loaded == 0) ? http.loadr : e.loaded;
+            var ended = window.performance.now();
+            speedEndCallback(rbytes, ended - started, id);
+            speedRecur(list, i + 1);
+        };
+        http.onprogress = function (e) {
+            if (stopTest) return;
+            var rbytes = e.loaded;
+            http.loadr = rbytes;
+            var ended = window.performance.now();
+            if (ended - started > 100) speedProgressCallback(rbytes, ended - started, id);
+        };
+        http.timeout = speedTimeout;
+        http.send();
+    };
+
+    $("#stop-test").click(function() {
+        stopTest = true;
+        
+        respondTimeouts.forEach(tid => clearTimeout(tid));
+        respondTimeouts = [];
+        
+        if (currentXHR) {
+            currentXHR.abort();
+            currentXHR = null;
+            console.log("Active download aborted.");
+        }
+
+        $("#test-respond, #test-speed, #img-select").prop("disabled", false);
+        alert("测试已立即强制停止");
+    });
+
+    $("#test-respond").off("click").click(function () {
+        stopTest = false;
+        var selectedRows = table.getSelectedRows();
+        if (selectedRows.length > 0) {
+            $(this).prop("disabled", true);
+            selectedRows.sort(positionSort);
+            respondTimeouts = [];
+            selectedRows.forEach((row, i) => {
+                var one = row.getData();
+                var tid = setTimeout(() => {
+                    if (stopTest) return;
+                    tcping("//" + one.ip.replace(/\./g, "-") + urlprefix + pingUrl + "?" + Math.random(), tcpingCallback, one.id);
+                }, pingInterval * (i + selectedRows.length / 100));
+                respondTimeouts.push(tid);
+            });
+            setTimeout(() => { table.redraw(true); $(this).prop("disabled", false); }, pingInterval * (selectedRows.length + 2));
+        }
+    });
+
+    $("#test-speed").click(() => { stopTest = false; });
+
+    $(document).ready(() => {
+        setTimeout(refreshTable, 100);
+        $("#generate-ip").click(() => { refreshTable(); select_0(); });
+    });
+  </script>
 </body>
-
 </html>
