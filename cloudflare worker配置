@@ -1,0 +1,21 @@
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    // 修改为xxx.com为自己的域名
+    const targetHost = "xxx.com"; 
+    
+    url.host = targetHost;
+    const newHeaders = new Headers(request.headers);
+    newHeaders.set("Host", targetHost);
+    
+    const modifiedRequest = new Request(url.toString(), {
+      method: request.method,
+      headers: newHeaders,
+      body: request.body,
+      redirect: "follow"
+    });
+
+    return fetch(modifiedRequest);
+  },
+};
