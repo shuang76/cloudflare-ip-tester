@@ -21,7 +21,7 @@
 1.  启用Github Cloudflare IP 测试项目设置的Pages功能，分支选择master下/root文件夹.
 2.  Cname解析自己域名到github，不开启Enforce HTTPS （非常重要），开启后将不能进行测试，这也是该项目巧妙之处。
 3.  关闭Cloudflare中所有强制验证SSL证书的功能， cloudflare Workers
-4.  访问该项目网页时，一定是http://开头，如果浏览器提示不安全，忽视即可。
+4.  访问该项目网页时，一定是'http://'开头，如果浏览器提示不安全，忽视即可。
 
 
 
