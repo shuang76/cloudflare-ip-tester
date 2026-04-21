@@ -25,15 +25,15 @@ options = {
             select_0()
     },
     columns: [
-        { title: "IP address", field: "ip" },
-        { title: "Colo", field: "region" },
+        { title: "IP 地址", field: "ip" },
+        { title: "机房位置（colo）", field: "region" },
         {
-            title: "Mean Respond Time", field: "time", sorter: "number", sorterParams: {
+            title: "响应时间", field: "time", sorter: "number", sorterParams: {
                 alignEmptyValues: "bottom",
             }
         },
         {
-            title: "Mean Download Speed", field: "speed", sorter: "number", sorterParams: {
+            title: "下载速度", field: "speed", sorter: "number", sorterParams: {
                 alignEmptyValues: "bottom",
             }
         },
@@ -49,11 +49,11 @@ table = new Tabulator("#main-table", options)
 // Panel
 function select_0() {
     $("#select-all").attr("status", 0)
-    $("#select-all").text("Select All")
+    $("#select-all").text("选中所有的IP")
 }
 function select_1() {
     $("#select-all").attr("status", 1)
-    $("#select-all").text("Deselect All")
+    $("#select-all").text("取消选择的IP")
 }
 $("#select-all").click(function () {
     if ($("#select-all").attr("status") == 0) {
