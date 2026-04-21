@@ -25,17 +25,17 @@ options = {
             select_0()
     },
     columns: [
-        { title: "IP 地址", field: "ip" ,width: 200},
-        { title: "机房位置（colo）", field: "region" ,width: 120},
+        { title: "IP 地址", field: "ip" ,width: 180},
+        { title: "机房位置（colo）", field: "region" ,width: 180},
         {
             title: "响应时间", field: "time", sorter: "number", sorterParams: {
                 alignEmptyValues: "bottom",
-            } ,width: 250
+            } ,width: 180
         },
         {
             title: "下载速度", field: "speed", sorter: "number", sorterParams: {
                 alignEmptyValues: "bottom",
-            } ,width: 250
+            } ,width: 180
         },
     ],
 }
