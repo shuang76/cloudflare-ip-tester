@@ -17,28 +17,37 @@
 
   <h1>Cloudflare IP Batch Test Tool</h1>
 
-  <div class="table panel">
-    <div class="line">
-      <div class="col">
-        <button class="button big" id="select-all" status=0>Select All</button>
-        <div class="line">
-          <input id="select-number" class="border" type="number" value="20" min="1" max="100"></input>
-          <button class="button" id="select-random"> Random </button>
-        </div>
+<div class="table panel">
+  <div class="line">
+    <div class="col">
+      <button class="button big" id="generate-ip">生成IP数量</button>
+      <div class="line">
+        <input id="generate-number" class="border" type="number" value="200" min="1" max="5000"></input>
+        <span style="font-size: 12px; align-self: center; margin-left: 5px;">Qty</span>
       </div>
-      <div class="col">
-        <button class="button big" id="test-respond" status=0>Test Respond</button>
-        <div class="line">
-          <select id="img-select" class="border">
-            <option value="0">115KB</option>
-            <option value="1" selected="selected">1.20MB</option>
-            <option value="2">10.4MB</option>
-          </select>
-          <button class="button" id="test-speed" status=0> Speed </button>
-        </div>
+    </div>
+
+    <div class="col">
+      <button class="button big" id="select-all" status=0>选择所有IP</button>
+      <div class="line">
+        <input id="select-number" class="border" type="number" value="20" min="1" max="100"></input>
+        <button class="button" id="select-random"> 随机选 </button>
+      </div>
+    </div>
+
+    <div class="col">
+      <button class="button big" id="test-respond" status=0>响应值测试</button>
+      <div class="line">
+        <select id="img-select" class="border">
+          <option value="0">115KB</option>
+          <option value="1" selected="selected">1.20MB</option>
+          <option value="2">10.4MB</option>
+        </select>
+        <button class="button" id="test-speed" status=0> 开始测试 </button>
       </div>
     </div>
   </div>
+</div>
 
 
 
@@ -60,61 +69,69 @@
   <br />
   <br />
   <script type="text/javascript" src="/script.js"></script>
-  <script>
-    // IP 转换工具函数
-    function ipToInt(ip) {
-        return ip.split('.').reduce((res, item) => (res << 8) + parseInt(item), 0) >>> 0;
-    }
+<script>
+  function ipToInt(ip) {
+      return ip.split('.').reduce((res, item) => (res << 8) + parseInt(item), 0) >>> 0;
+  }
 
-    function intToIp(int) {
-        return [(int >>> 24) & 0xff, (int >>> 16) & 0xff, (int >>> 8) & 0xff, int & 0xff].join('.');
-    }
+  function intToIp(int) {
+      return [(int >>> 24) & 0xff, (int >>> 16) & 0xff, (int >>> 8) & 0xff, int & 0xff].join('.');
+  }
 
-    // 生成随机 IP 的逻辑
-    function generateCloudflareIPs() {
-        const cidrs = [
-            "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "104.16.0.0/13",
-            "104.24.0.0/14", "108.162.192.0/18", "131.0.72.0/22", "141.101.64.0/18",
-            "162.158.0.0/15", "172.64.0.0/13", "173.245.48.0/20", "188.114.96.0/20",
-            "190.93.240.0/20", "197.234.240.0/22", "198.41.128.0/17"
-        ];
+  function generateCloudflareIPs(count) {
+      const cidrs = [
+          "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "104.16.0.0/13",
+          "104.24.0.0/14", "108.162.192.0/18", "131.0.72.0/22", "141.101.64.0/18",
+          "162.158.0.0/15", "172.64.0.0/13", "173.245.48.0/20", "188.114.96.0/20",
+          "190.93.240.0/20", "197.234.240.0/22", "198.41.128.0/17"
+      ];
 
-        let allCSubnets = [];
+      let allCSubnets = [];
+      cidrs.forEach(cidr => {
+          let [ip, mask] = cidr.split('/');
+          let startInt = ipToInt(ip);
+          let numIPs = Math.pow(2, 32 - parseInt(mask));
+          for (let i = 0; i < numIPs; i += 256) {
+              allCSubnets.push(startInt + i);
+          }
+      });
 
-        // 1. 遍历所有 CIDR，提取出所有的 /24 段（C段）
-        cidrs.forEach(cidr => {
-            let [ip, mask] = cidr.split('/');
-            let startInt = ipToInt(ip);
-            let count = Math.pow(2, 32 - parseInt(mask));
-            
-            // 以 256 为步长跳转（即每个 C 段的起始）
-            for (let i = 0; i < count; i += 256) {
-                allCSubnets.push(startInt + i);
-            }
-        });
+      allCSubnets.sort(() => Math.random() - 0.5);
 
-        // 2. 从所有 C 段中随机抽取 200 个
-        let selectedIPs = [];
-        let numToPick = Math.min(200, allCSubnets.length);
-        
-        for (let i = 0; i < numToPick; i++) {
-            let randomIndex = Math.floor(Math.random() * allCSubnets.length);
-            // 移除已选中的段，确保“不同C段”
-            let baseIpInt = allCSubnets.splice(randomIndex, 1)[0];
-            
-            // 在该 C 段内随机生成末尾主机地址 (1~254)
-            let hostIpInt = baseIpInt + Math.floor(Math.random() * 254) + 1;
-            selectedIPs.push(intToIp(hostIpInt));
-        }
+      let selectedIPs = [];
+      let actualCount = Math.min(count, allCSubnets.length);
+      
+      for (let i = 0; i < actualCount; i++) {
+          let baseIpInt = allCSubnets[i];
+          let hostIpInt = baseIpInt + Math.floor(Math.random() * 254) + 1;
+          selectedIPs.push(intToIp(hostIpInt));
+      }
+      return selectedIPs.join('\n');
+  }
 
-        // 3. 将结果转换为 tablemake 函数需要的格式（换行符分隔的字符串）
-        return selectedIPs.join('\n');
-    }
+  function refreshTable() {
+      let num = parseInt($("#generate-number").val());
+      if (isNaN(num) || num <= 0) num = 200;
+      if (num > 5000) num = 5000;
+      
+      idn = 0;
+      for (var key in database) delete database[key];
 
-    // 执行生成并初始化表格
-    const generatedData = generateCloudflareIPs();
-    tablemake(generatedData);
-  </script>
+      const data = generateCloudflareIPs(num);
+      tablemake(data);
+      
+      $("#select-number").attr("max", idn);
+      console.log("Generated " + idn + " unique C-class IPs.");
+  }
+
+  $(document).ready(function() {
+      refreshTable();
+      $("#generate-ip").click(function() {
+          refreshTable();
+          select_0(); 
+      });
+  });
+</script>
 </body>
 
 </html>
