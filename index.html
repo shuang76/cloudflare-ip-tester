@@ -61,7 +61,59 @@
   <br />
   <script type="text/javascript" src="/script.js"></script>
   <script>
-    $.get("./ip_list.csv", tablemake)
+    // IP 转换工具函数
+    function ipToInt(ip) {
+        return ip.split('.').reduce((res, item) => (res << 8) + parseInt(item), 0) >>> 0;
+    }
+
+    function intToIp(int) {
+        return [(int >>> 24) & 0xff, (int >>> 16) & 0xff, (int >>> 8) & 0xff, int & 0xff].join('.');
+    }
+
+    // 生成随机 IP 的逻辑
+    function generateCloudflareIPs() {
+        const cidrs = [
+            "103.21.244.0/22", "103.22.200.0/22", "103.31.4.0/22", "104.16.0.0/13",
+            "104.24.0.0/14", "108.162.192.0/18", "131.0.72.0/22", "141.101.64.0/18",
+            "162.158.0.0/15", "172.64.0.0/13", "173.245.48.0/20", "188.114.96.0/20",
+            "190.93.240.0/20", "197.234.240.0/22", "198.41.128.0/17"
+        ];
+
+        let allCSubnets = [];
+
+        // 1. 遍历所有 CIDR，提取出所有的 /24 段（C段）
+        cidrs.forEach(cidr => {
+            let [ip, mask] = cidr.split('/');
+            let startInt = ipToInt(ip);
+            let count = Math.pow(2, 32 - parseInt(mask));
+            
+            // 以 256 为步长跳转（即每个 C 段的起始）
+            for (let i = 0; i < count; i += 256) {
+                allCSubnets.push(startInt + i);
+            }
+        });
+
+        // 2. 从所有 C 段中随机抽取 200 个
+        let selectedIPs = [];
+        let numToPick = Math.min(200, allCSubnets.length);
+        
+        for (let i = 0; i < numToPick; i++) {
+            let randomIndex = Math.floor(Math.random() * allCSubnets.length);
+            // 移除已选中的段，确保“不同C段”
+            let baseIpInt = allCSubnets.splice(randomIndex, 1)[0];
+            
+            // 在该 C 段内随机生成末尾主机地址 (1~254)
+            let hostIpInt = baseIpInt + Math.floor(Math.random() * 254) + 1;
+            selectedIPs.push(intToIp(hostIpInt));
+        }
+
+        // 3. 将结果转换为 tablemake 函数需要的格式（换行符分隔的字符串）
+        return selectedIPs.join('\n');
+    }
+
+    // 执行生成并初始化表格
+    const generatedData = generateCloudflareIPs();
+    tablemake(generatedData);
   </script>
 </body>
 
