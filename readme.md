@@ -20,7 +20,7 @@
 
 1.  forks项目，然后找到自己forks的项目下设置中的Pages功能，分支选择master下/root文件夹，不开启Enforce HTTPS（非常重要）。注意：开启后将不能进行测试，这也是该项目巧妙之处。
 2.  自己域名托管到Cloudflare。
-3.  Cloudflare后台：添加自己域名的三条NS记录分别为ns-hetzner.sslip.io、ns-ovh.sslip.io、ns-do-sg.sslip.io；CNAME解析自己域名到该github项目网址。
+3.  Cloudflare后台：添加自己域名的三条NS记录分别为‘ ns-hetzner.sslip.io、ns-ovh.sslip.io、ns-do-sg.sslip.io ’；CNAME解析自己域名到该Github项目Pages网址，成功CNAME后,Github项目下会有个CNAME文件，内容为自己域名。
 4.  Cloudflare后台：关闭边缘证书中始终使用 HTTPS， SSL/TLS 加密设置为灵活，不启用HSTS；
 5.  新建Workers，复制项目中Cloudflare Workers配置文件的代码，记得修改‘ xxx.com ’为自己域名，并为Workers添加路由‘ *.自己域名/* ’
    注意：访问该自己部署的项目网页时，以'http://'开头，如果浏览器提示不安全，忽视即可。
