@@ -19,7 +19,7 @@
 
 ##  如何部署
 
-1.  forks项目，然后找到自己forks的项目下设置中的Pages功能，分支选择master下/root文件夹，不开启Enforce HTTPS（非常重要）。注意：开启后将不能进行测试，这也是该项目巧妙之处
+1.  forks项目，修改forks项目下script.js文件第1行的域名为自己域名，然后找到该项目下设置中的Pages功能，分支选择master下/root文件夹，不开启Enforce HTTPS（非常重要）save部署。注意：开启后将不能进行测试，这也是该项目巧妙之处
 2.  自己域名托管到Cloudflare
 3.  Cloudflare后台：添加自己域名的三条NS记录分别为 “ ns-hetzner.sslip.io、ns-ovh.sslip.io、ns-do-sg.sslip.io ” ；CNAME解析自己域名到该Github项目Pages网址，成功CNAME后，Github项目下会有个CNAME文件，内容为自己域名
 4.  Cloudflare后台：关闭边缘证书中始终使用 HTTPS， SSL/TLS 加密设置为灵活，不启用HSTS
