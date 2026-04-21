@@ -12,16 +12,18 @@
 
 ##  改进功能
 
-1. 添加随机生成ip数量
+1. 添加随机生成IP数量（上限5000，下限1）
 2. 添加停止测试功能
-3. 汉化语言。
+3. 中文汉化
 
 ##  如何部署
 
-1.  启用Github Cloudflare IP 测试项目设置的Pages功能，分支选择master下/root文件夹.
-2.  Cname解析自己域名到github项目，不开启Enforce HTTPS （非常重要），开启后将不能进行测试，这也是该项目巧妙之处。
-3.  关闭Cloudflare中所有强制验证SSL证书的功能， Cloudflare Workers
-4.  访问该项目网页时，一定是'http://'开头，如果浏览器提示不安全，忽视即可。
+1.  forks项目，然后找到自己forks的项目下设置中的Pages功能，分支选择master下/root文件夹，不开启Enforce HTTPS（非常重要）。注意：开启后将不能进行测试，这也是该项目巧妙之处。
+2.  自己域名托管到Cloudflare。
+3.  Cloudflare后台：添加自己域名的三条NS记录分别为ns-hetzner.sslip.io、ns-ovh.sslip.io、ns-do-sg.sslip.io；CNAME解析自己域名到该github项目网址。
+4.  Cloudflare后台：关闭边缘证书中始终使用 HTTPS， SSL/TLS 加密设置为灵活，不启用HSTS；
+5.  新建Workers，复制项目中Cloudflare Workers配置文件的代码，记得修改‘ xxx.com ’为自己域名，并为Workers添加路由‘ *.自己域名/* ’
+   注意：访问该自己部署的项目网页时，以'http://'开头，如果浏览器提示不安全，忽视即可。
 
 
 
